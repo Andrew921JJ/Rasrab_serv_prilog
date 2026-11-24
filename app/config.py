@@ -1,28 +1,30 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
+import sys
 
 class Config:
-    SERVICE_NAME = os.getenv("SERVICE_NAME", "ChatService")
-    SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
-    PORT = int(os.getenv("PORT", 5000))
-    DEBUG = os.getenv("FLASK_ENV") == "development"
+    def __init__(self):
+        # Обязательные переменные
+        self.DB_HOST = self._require("DB_HOST")
+        self.DB_PORT = self._require("DB_PORT")
+        self.DB_USER = self._require("DB_USER")
+        self.DB_PASSWORD = self._require("DB_PASSWORD")
+        self.DB_NAME = self._require("DB_NAME")
+        
+        # Необязательные (со значениями по умолчанию)
+        self.DB_MAX_CONNS = int(os.getenv("DB_MAX_CONNS", "10"))
+        self.DB_CONN_RETRIES = int(os.getenv("DB_CONN_RETRIES", "10"))
+        self.DB_CONN_RETRY_DELAY = float(os.getenv("DB_CONN_RETRY_DELAY", "2"))
+        
+        # Для Flask
+        self.SERVICE_NAME = os.getenv("SERVICE_NAME", "ChatService")
+        self.SERVICE_VERSION = os.getenv("SERVICE_VERSION", "1.0.0")
 
-    # Настройки MySQL (Драйвер PyMySQL)
-    DB_USER = os.getenv("DB_USER", "root")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "mysecretpassword")
-    DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_PORT = os.getenv("DB_PORT", "3306")
-    DB_NAME = os.getenv("DB_NAME", "chat_db")
+    @staticmethod
+    def _require(name: str) -> str:
+        value = os.getenv(name)
+        if value is None or value.strip() == "":
+            print(f"[CONFIG ERROR] Обязательная переменная окружения '{name}' не задана.", file=sys.stderr)
+            sys.exit(1) # Прекращаем запуск
+        return value
 
-    SQLALCHEMY_DATABASE_URI = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    
-    # Пул соединений с повторными попытками (Пункт 4)
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        "pool_size": 10,
-        "max_overflow": 20,
-        "pool_recycle": 280, # MySQL обрывает соединения через 8 часов (28800 сек)
-        "pool_pre_ping": True, # Проверка соединения перед использованием
-    }
+config = Config()

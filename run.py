@@ -1,25 +1,11 @@
-from flask import Flask, jsonify
-from app.db import db
-from app.config import config
+import os
+from app import create_app
 
-app = Flask(__name__)
-
-# Инициализация пула при старте
-@app.before_first_request
-def init_db():
-    db.connect()
-
-@app.route('/health', methods=['GET'])
-def health():
-    try:
-        conn = db.pool.get_connection()
-        try:
-            conn.ping(reconnect=True)
-        finally:
-            conn.close()
-        return jsonify({"status": "ok", "db": "up", "service": config.SERVICE_NAME}), 200
-    except Exception:
-        return jsonify({"status": "error", "db": "down"}), 503
+# Создаем приложение с помощью фабрики
+app = create_app()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    # Запускаем встроенный сервер Flask для разработки
+    # (В Docker с Gunicorn эта часть кода не выполняется)
+    port = int(os.getenv("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)

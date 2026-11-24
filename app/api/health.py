@@ -1,14 +1,23 @@
 from flask import Blueprint, jsonify
-from app.services.health_service import HealthService
+from sqlalchemy import text
+from ..db import db
+from ..config import config
 
-# Создаем Blueprint для группы эндпоинтов здоровья
+# Объявляем Blueprint с именем 'health_bp'
 health_bp = Blueprint('health', __name__)
 
-@health_bp.route('/api/v1/health', methods=['GET'])
-def health_check():
-    """
-    GET /api/v1/health
-    Возвращает 200 OK и информацию о сервисе.
-    """
-    data = HealthService.get_health_status()
-    return jsonify(data), 200
+@health_bp.route('/health', methods=['GET'])
+def health():
+    try:
+        # Проверяем подключение к БД через SQLAlchemy
+        db.session.execute(text('SELECT 1'))
+        return jsonify({
+            "status": "ok", 
+            "db": "up", 
+            "service": config.SERVICE_NAME
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "status": "error", 
+            "db": "down"
+        }), 503

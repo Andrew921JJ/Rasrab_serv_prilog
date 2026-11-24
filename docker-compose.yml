@@ -9,7 +9,7 @@ services:
       MYSQL_USER: ${DB_USER}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "3307:3306"
+      - "13306:3306"
     volumes:
       - mysqldata:/var/lib/mysql
     healthcheck:
@@ -18,38 +18,18 @@ services:
       timeout: 5s
       retries: 20
 
-  migrate:
-    image: migrate/migrate:v4.17.0
-    container_name: app_migrate
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./migrations:/migrations
-    command:
-      - "-path=/migrations"
-      - "-database=mysql://${DB_USER}:${DB_PASSWORD}@tcp(db:3306)/${DB_NAME}?multiStatements=true"
-      - "up"
-    restart: "no"
-
-
-
   app:
     build: .
     container_name: app_backend
     depends_on:
       db:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     environment:
-      # --- Добавили для Flask ---
       FLASK_APP: ${FLASK_APP}
       FLASK_ENV: ${FLASK_ENV}
       PORT: ${PORT}
       SERVICE_NAME: ${SERVICE_NAME}
       SERVICE_VERSION: ${SERVICE_VERSION}
-      # --------------------------
       DB_HOST: ${DB_HOST}
       DB_PORT: ${DB_PORT}
       DB_USER: ${DB_USER}
@@ -59,7 +39,7 @@ services:
       DB_CONN_RETRIES: ${DB_CONN_RETRIES}
       DB_CONN_RETRY_DELAY: ${DB_CONN_RETRY_DELAY}
     ports:
-      - "${PORT}:5000" # <--- Изменили порт на 5000
+      - "${PORT}:5000"
 
 volumes:
   mysqldata:

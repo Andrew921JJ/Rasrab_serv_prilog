@@ -1,7 +1,7 @@
 from flask import Flask
 from flask_migrate import Migrate
-from .config import Config        # <--- Добавлена точка
-from .db import init_db_with_retries, db  # <--- Добавлена точка
+from .config import Config
+from .db import init_db_with_retries, db
 
 migrate = Migrate()
 
@@ -16,9 +16,9 @@ def create_app():
     migrate.init_app(app, db)
 
     # Импортируем модели, чтобы Alembic их "увидел"
-    from . import models          # <--- Добавлена точка
+    from . import models
 
-    # Регистрация Blueprints (из папки api)
+    # Регистрация Blueprints
     from .api.health import health_bp
     from .api.auth import auth_bp
     from .api.users import users_bp
