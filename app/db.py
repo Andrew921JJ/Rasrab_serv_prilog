@@ -1,7 +1,7 @@
 import time
 import logging
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 
 from .config import config
@@ -13,17 +13,17 @@ db = SQLAlchemy()
 
 def init_db_with_retries(app):
     """
-    Инициализирует подключение к БД с повторными попытками при старте.
+    Инициализирует подключение к PostgreSQL с повторными попытками при старте.
     """
-    # Формируем строку подключения для MySQL (используем pymysql или mysql-connector)
-    # Формат: mysql+mysqlconnector://user:password@host:port/dbname
+    # Формируем строку подключения для PostgreSQL (используем драйвер psycopg 3)
     db_uri = (
-        f"mysql+mysqlconnector://{config.DB_USER}:{config.DB_PASSWORD}"
+        f"postgresql+psycopg://{config.DB_USER}:{config.DB_PASSWORD}"
         f"@{config.DB_HOST}:{config.DB_PORT}/{config.DB_NAME}"
     )
     
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
     # Настройки пула соединений (ограниченный размер)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_size': config.DB_MAX_CONNS,
