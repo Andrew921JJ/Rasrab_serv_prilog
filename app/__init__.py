@@ -1,30 +1,10 @@
-from flask import Flask, jsonify
+from flask import Flask
 from flask_migrate import Migrate
 from .config import Config
 from .db import init_db_with_retries, db
-import atexit # <--- Добавлен импорт
+import atexit
 
 migrate = Migrate()
-
-def register_error_handlers(app):
-    from .domain.errors import ErrNotFound, ErrAlreadyExists, ErrConflict, ErrInvalidInput
-    
-    @app.errorhandler(ErrNotFound)
-    def handle_not_found(e):
-        return jsonify({"error": str(e)}), 404
-
-    @app.errorhandler(ErrAlreadyExists)
-    def handle_already_exists(e):
-        return jsonify({"error": str(e)}), 409
-
-    @app.errorhandler(ErrConflict)
-    def handle_conflict(e):
-        return jsonify({"error": str(e)}), 409
-
-    @app.errorhandler(ErrInvalidInput)
-    def handle_invalid_input(e):
-        return jsonify({"error": str(e)}), 422
-
 
 def create_app():
     app = Flask(__name__)
@@ -46,20 +26,16 @@ def create_app():
                f"user={os.getenv('DB_USER', 'app')} password={os.getenv('DB_PASSWORD', 'supersecret')} " \
                f"dbname={os.getenv('DB_NAME', 'appdb')}"
     
-    # Открываем пул
     pool = ConnectionPool(conninfo=conninfo, min_size=1, max_size=10)
     pool.open()
 
-    # Сохраняем пул в конфиге, чтобы его можно было закрыть
     app.config['DB_POOL'] = pool
 
-    # Регистрируем закрытие пула при остановке приложения (чтобы убрать RuntimeError из логов)
     @atexit.register
     def close_db_pool():
         if not pool.closed:
             pool.close()
 
-    # Сохраняем репозитории
     app.config['USER_REPO'] = PgUserRepository(pool)
     app.config['POST_REPO'] = PgPostRepository(pool)
 
@@ -79,8 +55,9 @@ def create_app():
     app.register_blueprint(posts_bp, url_prefix='/api/posts')
 
     # ==========================================
-    # РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ ОШИБОК
+    # РЕГИСТРАЦИЯ ОБРАБОТЧИКОВ ОШИБОК (ИМПОРТ ИЗ НОВОГО ФАЙЛА)
     # ==========================================
+    from .api.error_handlers import register_error_handlers
     register_error_handlers(app)
 
     return app
